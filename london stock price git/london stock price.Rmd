@@ -1,0 +1,819 @@
+---
+title: "London Stock Pirce"
+author: "Shi Fan Jin"
+date: "11/11/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(astsa)
+library(forecast)
+```
+
+
+##Your task is to predict the next 10 observations of these time series.
+##You need to turn in the following:
+###1. Your predictions for all three data sets (see below for further instructions).
+###2. A report describing your analysis of one of the data sets (see below for further instructions).
+
+```{r}
+dat1 = read.csv("data1.csv")
+dat2 = read.csv("data2.csv")
+dat3 = read.csv("data3.csv")
+```
+
+#DATA 1
+```{r}
+plot(dat1, type = "l", main = "data 1")
+```
+
+The plot of the data set doesn't seem to be stationary, it looks like it has a seasonal factor and some kind of trend.
+In this case, I decided difference the data with different lags in order to get rid of the seasonal factor. 
+
+##Data 1 Transformation
+```{r}
+plot(sqrt(dat1$x), type = "l", main = "sqrt(dat1)")
+# Nothing helpful
+
+# Since there's around 3 peaks in every 100 period, try differencing with lag = 100/3 = 33.33, which lag = 33
+dat1_lag33 = diff(dat1$x, lag = 33)
+plot(dat1_lag33, type = "l", main = "Differenced data 1 with lag = 33")
+
+auto.arima(dat1$x)
+```
+
+
+##Data Transforming (TRY)
+```{r}
+dat1_diff4 = diff(dat1$x, differences = 4)
+plot(dat1_diff4, type = "l", main = "Differenced 4 times to remove quartic trend")
+acf2(dat1_diff4)
+
+
+# log transform                   # bad
+dat1_log = log(dat1$x)
+plot(dat1_log, type = "l", main = "log(dat1)")
+
+#lag = 1                    # looks good
+dat1_lag1 = diff(dat1$x, lag = 1)
+plot(dat1_lag1, type = "l", main = "Differenced data 1 with lag = 1")
+
+# Since the plot suggests a quartic trend
+# Use 4th differencing to handle it
+#lag = 4                    # looks good
+dat1_lag4 = diff(dat1$x, lag = 4)
+plot(dat1_lag4, type = "l", main = "Differenced data 1 with lag = 4")
+
+# LOOKS NOT THAT GOOD
+dat1_lag4 = diff(dat1$x, lag = 4)
+plot(dat1_lag4, type = "l", main = "Differenced data 1 with lag = 4")
+plot(diff(dat1_lag4, lag = 25), type = "l", main = "diff(diff(dat1, lag = 4), lag = 25)")
+
+#lag = 10                   # looks good
+dat1_lag10 = diff(dat1$x, lag = 10)
+plot(dat1_lag10, type = "l", main = "Differenced data 1 with lag = 10")
+# The first difference of the seasonal(10) differenced of data 
+dat_lag10_diff = diff(dat1_lag10)
+plot(dat_lag10_diff, type = "l", main = "diff(diff(dat1, lag = 10), lag = 1)")
+# This looks like a white noise
+dat_lag10_diff33 = diff(dat1_lag10, lag = 33)
+plot(dat_lag10_diff33, type = "l", main = "diff(diff(dat1, lag = 10), lag = 33)")
+
+
+#lag = 30                   # bad
+dat1_lag30 = diff(dat1$x, lag = 30)
+plot(dat1_lag30, type = "l", main = "Differenced data 1 with lag = 30")
+
+#lag = 50                   # bad
+dat1_lag50 = diff(dat1$x, lag = 50)
+plot(dat1_lag50, type = "l", main = "Differenced data 1 with lag = 50")
+
+# The first difference of the seasonal(50) differenced of data 
+dat_lag50_diff = diff(dat1_lag50)
+plot(dat_lag50_diff, type = "l", main = "diff(diff(dat1, lag = 50), lag = 1)")
+# This looks like a white noise
+
+# There seems to be 8 little peeks in one 100 period
+plot(diff(diff(dat1$x), lag = 12),type = "l", main = "Differenced data 1 with lag = 12")
+# still looks like some small seasonal components
+# MAYBE DIFFERENCE AGAIN?
+# The first difference of the seasonal(12) differenced of data
+dat_lag12_diff = diff(diff(dat1$x), lag = 12)
+plot(dat_lag12_diff, type = "l", main = "diff(diff(dat1$x), lag = 12)")
+```
+
+**CANDIDATES:**
+dat1_diff4:
+  diff(dat1$x, differences = 4)
+  # 4 times differenced
+dat1_lag1: 
+  diff(dat1, lag = 1)
+  # Differenced of lag(1)
+dat_lag10_diff: 
+  diff(diff(dat1, lag = 10), lag = 1)
+  # The first difference of the seasonal(10) differenced of data 
+dat_lag50_diff: 
+  diff(diff(dat1, lag = 50), lag = 1)
+  # The first difference of the seasonal(50) differenced of data 
+dat_lag12_diff:
+  diff(diff(dat1$x), lag = 12)
+  # The first difference of the seasonal(12) differenced of data
+  
+```{r}
+dat1_diff4 = diff(dat1$x, differences = 4)
+plot(dat1_diff4, type = "l", main = "Differenced 4 times to remove quartic trend")
+
+dat1_lag1 = diff(dat1$x, lag = 1)
+plot(dat1_lag1, type = "l", main = "Differenced data 1 with lag = 1")
+
+dat_lag10_diff = diff(dat1_lag10)
+plot(dat_lag10_diff, type = "l", main = "diff(diff(dat1, lag = 10), lag = 1)")
+
+dat_lag50_diff = diff(dat1_lag50)
+plot(dat_lag50_diff, type = "l", main = "diff(diff(dat1, lag = 50), lag = 1)")
+
+dat_lag12_diff = diff(diff(dat1$x), lag = 12)
+plot(dat_lag12_diff, type = "l", main = "diff(diff(dat1$x), lag = 12)")
+```
+
+  
+  
+###Check the candidates if stationary using ACF
+```{r}
+acf2(dat1_diff4)
+# potential p = 10, q = 4
+# potential combination of (p, q) = (10, 0), (0, 4), (10, 4)
+# HOWEVER, the PACF seems to be tapering, so in this case maybe it indicates a SMA(4)
+
+
+acf2(dat1_lag1)
+# NO SHARP CUT OFF IN THE BEGGINING >>> ignore the ones that's already in the beginning?
+# potential p = 7, q = 7
+# potential combination of (p, q) = (7, 0), (0, 7), (7, 7)
+# HOWEVER, the PACF seems to be tapering, so in this case maybe it indicates a SMA(7)
+# NO SECOND DIFF WITH SEASONAL LAG >>> CANT USE SAR OR SMA!!!
+
+
+acf2(dat_lag10_diff)
+acf(dat_lag10_diff)
+# NO SHARP CUT OFF IN THE BEGGINING >>> ignore the ones that's already in the beginning?
+# potential p = 2, q = 2
+# potential combination of (p, q) = (2, 0), (0, 2), (2, 2)
+# HOWEVER, the ACF seems to be tapering, so in this case maybe it indicates a SAR(2)
+
+
+acf2(dat_lag50_diff)
+acf(dat_lag50_diff)
+pacf(dat_lag50_diff)
+# NO SHARP CUT OFF IN THE BEGGINING >>> ignore the ones that's already in the beginning?
+# potential p = 3, q = 4
+# potential combination of (p, q) = (3, 0), (0, 4), (3, 4)
+# HOWEVER, the ACF seems to be tapering, so in this case maybe it indicates a SAR(3)
+
+
+acf2(dat_lag12_diff)
+# NO SHARP CUT OFF IN THE BEGGINING >>> ignore the ones that's already in the beginning?
+# potential p = 2, q = 2
+# potential combination of (p, q) = (2, 0), (0, 2), (2, 2)
+# HOWEVER, the ACF seems to be tapering, so in this case maybe it indicates a SAR(2)
+
+```
+
+##FITTING MODEL LATEST
+```{r}
+##################  FROM dat1_diff4
+## potential combination of (p, q) = (10, 0), (0, 4), (10, 4)
+#### (10,4,0)(0,0,0)[0]
+model1A = sarima(dat1$x,p=10,d=4,q=0,P=0,D=0,Q=0,S=0)   #BAD
+model1A$ttable
+#### (0,4,4)(0,0,0)[0]
+model1A_1 = sarima(dat1$x,p=0,d=4,q=4,P=0,D=0,Q=0,S=0)   #BAD
+model1A_1$ttable
+#### (10,4,4)(0,0,0)[0]
+model1A_2 = sarima(dat1$x,p=10,d=4,q=4,P=0,D=0,Q=0,S=0)   #BAD
+model1A_2$ttable
+
+
+##################  FROM dat1_lag1
+## potential combination of (p, q) = (7, 0), (0, 7), (7, 7)
+#### (7,1,0)(0,0,0)[0]
+model1B = sarima(dat1$x,p=7,d=1,q=0,P=0,D=0,Q=0,S=0)   #PRETTY GOOD
+model1B$ttable
+model1B$AIC
+model1B$BIC
+model1B$AICc
+#### (0,1,7)(0,0,0)[0]
+model1B_1 = sarima(dat1$x,p=0,d=1,q=7,P=0,D=0,Q=0,S=0)   #WORSE THAN PREVIOUS (model1B)
+model1B_1$ttable
+#### (7,1,7)(0,0,0)[0]
+model1B_2 = sarima(dat1$x,p=7,d=1,q=7,P=0,D=0,Q=0,S=0)   #BAD
+model1B_2$ttable
+# FROM the p-values, MAYBE try AR(3) or/and MA(3)?
+#### (3,1,3)(0,0,0)[0]
+model1B_3 = sarima(dat1$x,p=3,d=1,q=3,P=0,D=0,Q=0,S=0)   #GOOD, AIC/BIC better than model1B, But BOX IS WORSE
+model1B_3$ttable
+model1B_3$AIC
+model1B_3$BIC
+model1B_3$AICc
+
+
+##################  FROM dat_lag10_diff
+## potential combination of (p, q) = (2, 0), (0, 2), (2, 2)
+#### (2,1,0)(0,1,0)[10]
+model1C = sarima(dat1$x,p=2,d=1,q=0,P=0,D=1,Q=0,S=10)   #BAD
+model1C$ttable
+#### (0,1,2)(0,1,0)[10]
+model1C_1 = sarima(dat1$x,p=0,d=1,q=2,P=0,D=1,Q=0,S=10)   #BAD
+model1C_1$ttable
+#### (2,1,2)(0,1,0)[10]
+model1C_2 = sarima(dat1$x,p=2,d=1,q=2,P=0,D=1,Q=0,S=10)   #BAD
+model1C_2$ttable
+model1C_2$AIC
+model1C_2$BIC
+model1C_2$AICc
+# ACF SEEMS TO BE TAPERING >>> MAYBE SAR(2)?
+#### (2,1,2)(2,1,0)[10]
+model1C_3 = sarima(dat1$x,p=2,d=1,q=2,P=2,D=1,Q=0,S=10)   ##IMPROVING
+model1C_3$ttable
+
+
+##################  FROM dat_lag50_diff
+## potential combination of (p, q) = (3, 0), (0, 4), (3, 4)
+#### (3,1,0)(0,1,0)[50]
+model1D = sarima(dat1$x,p=3,d=1,q=0,P=0,D=1,Q=0,S=50)   #BAD??? CANT REALLY TELL FROM THE BOX
+model1D$ttable
+model1D$AIC
+model1D$BIC
+model1D$AICc
+# BAD AIC, BIC, AICc
+#### (0,1,4)(0,1,0)[50]
+model1D_1 = sarima(dat1$x,p=0,d=1,q=4,P=0,D=1,Q=0,S=50)   #THE AIC/BIC are BADDD, Although the BOX seems good in the FRONT
+model1D_1$ttable
+model1D_1$AIC
+model1D_1$BIC
+model1D_1$AICc
+#### (3,1,4)(0,1,0)[50]
+model1D_2 = sarima(dat1$x,p=3,d=1,q=4,P=0,D=1,Q=0,S=50)   #THE AIC/BIC are BADDD, Although the BOX seems good in the FRONT
+model1D_2$ttable
+model1D_2$AIC
+model1D_2$BIC
+model1D_2$AICc
+# ACF SEEMS TAPERING >>> MAYBE SAR(3)?
+#### (3,1,4)(3,1,0)[50]
+#model1D_3 = sarima(dat1$x,p=3,d=1,q=4,P=3,D=1,Q=0,S=50)   #ERROR!
+
+
+
+##################  FROM dat_lag12_diff
+## potential combination of (p, q) = (2, 0), (0, 2), (2, 2)
+#### (2,1,0)(0,1,0)[12]
+model1E = sarima(dat1$x,p=2,d=1,q=0,P=0,D=1,Q=0,S=12)   #IMPROVING STILL BAD
+model1E$ttable
+#### (0,1,2)(0,1,0)[12]
+model1E_1 = sarima(dat1$x,p=0,d=1,q=2,P=0,D=1,Q=0,S=12)   #IMPROVING STILL BAD
+model1E_1$ttable
+#### (2,1,2)(0,1,0)[12]
+model1E_2 = sarima(dat1$x,p=2,d=1,q=2,P=0,D=1,Q=0,S=12)   #BAD
+model1E_2$ttable
+# ACF SEEMS TO BE TAPERING >>> MAYBE SAR(2)?
+#### (2,1,2)(2,1,0)[12]
+model1E_3 = sarima(dat1$x,p=2,d=1,q=2,P=2,D=1,Q=0,S=12)   #BAD
+model1E_3$ttable
+# OR MAYBE IT'S PACF TAPERING? >>> MAYBE SMA(2)?
+#### (2,1,2)(0,1,2)[12]
+model1E_4 = sarima(dat1$x,p=2,d=1,q=2,P=0,D=1,Q=2,S=12)   #PRETTY GOOD! BUT STILL SOME UNDER ## BIC BETTER THAN model1B_3 
+model1E_4$ttable
+model1E_4$AIC
+model1E_4$BIC
+model1E_4$AICc
+## BIC BETTER THAN model1B_3, BUT AIC AND AICc a bit WORSE THAN model1B_3
+# HOW ABOUT SAR(2) and SMA(2) at the same time?
+#### (2,1,2)(2,1,2)[12]
+model1E_5 = sarima(dat1$x,p=2,d=1,q=2,P=2,D=1,Q=2,S=12)   #BAD 
+model1E_5$ttable
+
+
+####################################################CHOOSE (3,1,3)(0,0,0)[0] OR (2,1,2)(0,1,2)[12]
+model1B_3 = sarima(dat1$x,p=3,d=1,q=3,P=0,D=0,Q=0,S=0)
+model1B_3$fit
+model1B_3$AIC
+model1B_3$BIC
+model1B_3$AICc
+# AIC, AICc better
+
+model1E_4 = sarima(dat1$x,p=2,d=1,q=2,P=0,D=1,Q=2,S=12)
+model1E_4$fit
+model1E_4$AIC
+model1E_4$BIC
+model1E_4$AICc
+# BIC better
+
+####### >>>> NEED more COMPARISOM >>> MAYBE Cross Validation?
+
+
+```
+
+##Forecasting
+```{r}
+#######################(3,1,3)(0,0,0)[0] model
+pred1A = sarima.for(dat1$x, n.ahead = 10, p=3,d=1,q=3,P=0,D=0,Q=0,S=0)
+pred1A$pred
+
+#######################(2,1,2)(0,1,2)[12] model ###############################USE THIS ONE IN THE END
+pred1B = sarima.for(dat1$x, n.ahead = 10, p=2,d=1,q=2,P=0,D=1,Q=2,S=12)
+pred1B$pred
+
+```
+
+
+
+
+###########################################################################################################################
+
+
+#Data 2
+```{r}
+plot(dat2, type = "l", main = "data 2")
+#Seems to have a seasonal factor and some kind of trend (quadratic, cubic)
+```
+
+##Data 2 Transformation
+```{r}
+
+# looks like there is a quadratic trend, take diff with differences = 2
+dat2_diff2 = diff(dat2$x, differences = 2)
+plot(dat2_diff2, type = "l", main = "Diff(dat2, differences = 2) to remove the quadratic trend")
+
+plot(diff(diff(dat2$x)), type = "l", main = "diff(diff(dat2))")
+
+##**diff(diff(dat2$x)) == diff(dat2$x, differences = 2)
+
+# differenced with lag = 9
+dat2_lag9 = diff(dat2$x, lag = 9)
+plot(dat2_lag9, type = "l")
+# there seems to be still a seasonal factor
+dat2_lag9_10 = diff(dat2_lag9, lag = 10)
+plot(dat2_lag9_10, type = "l")
+# after differencing again with lag = 10
+
+
+# looks like there's 9 peeks between 0 ~ 100, so each cycle would be 100/9,
+# which is approximately 11.11, so choose lag = 11 for differencing for a try.
+dat2_lag11 = diff(dat2$x, lag = 11)
+plot(dat2_lag11, type = "l", main = "Differenced data 2 with lag = 11")
+# This looks roughly stationary, with no seasonal component or linear trend. 
+# To recap, dat2_lag11 = (1 - B^11)x_t where x_t is our original data. 
+
+# looks like there's 8 peeks in each 100 period, cycle would be 100/8 = 12.5
+# Try lag = 12
+dat2_lag12 = diff(dat2$x, lag = 12)
+plot(dat2_lag12, type = "l", main = "Differenced data 2 with lag = 12")
+# This looks roughly stationary, with no seasonal component or linear trend. 
+# To recap, dat2_lag11 = (1 - B^12)x_t where x_t is our original data. 
+dat2_lag12_diff = diff(dat2_lag12)
+plot(dat2_lag12_diff, type = "l", main = "diff(diff(dat2$x, lag = 12), lag = 1)")
+# This looks roughly stationary, with no seasonal component or linear trend. 
+# To recap, dat2_lag11 = (1 - B^12)(1 - B)x_t where x_t is our original data. 
+```
+
+**CANDIDATES:**
+dat2_lag11: 
+  diff(dat2, lag = 11)
+  # Differenced of lag(1)
+dat2_lag12: 
+  diff(dat2, lag = 12)
+  # Differenced of lag(12)
+dat2_lag12_diff: 
+  diff(diff(dat2, lag = 12), lag = 1)
+  # The first difference of the seasonal(12) differenced of data 
+```{r}
+dat2_lag11 = diff(dat2$x, lag = 11)
+plot(dat2_lag11, type = "l", main = "Differenced data 2 with lag = 11")
+
+dat2_lag12 = diff(dat2$x, lag = 12)
+plot(dat2_lag12, type = "l", main = "Differenced data 2 with lag = 12")
+
+dat2_lag12_diff = diff(dat2_lag12)
+plot(dat2_lag12_diff, type = "l", main = "diff(diff(dat2$x, lag = 12), lag = 1)")
+```
+
+
+
+###Check the candidates if stationary using ACF
+```{r}
+acf2(dat2_lag11) 
+# potential p = 4, q = 2
+# potential combination of (p, q) = (4, 0), (0, 2), (4, 2)
+# HOWEVER, the PACF seems to be tapering, so in this case maybe it indicates a SMA(2)
+# NO SECOND DIFF WITH SEASONAL LAG >>> CANT USE SAR OR SMA!!!
+
+acf2(dat2_lag12)
+# potential p = 1, q = 2
+# potential combination of (p, q) = (1, 0), (0, 2), (1, 2)
+# HOWEVER, the ACF seems to be tapering, so in this case maybe it indicates a SAR(1)
+# NO SECOND DIFF WITH SEASONAL LAG >>> CANT USE SAR OR SMA!!!
+
+acf2(dat2_lag12_diff)
+# potential p = 8, q = 2
+# potential combination of (p, q) = (8, 0), (0, 2), (8, 2)
+# THIS ONE'S PACF DOESN'T SEEM TO BE GOOD (DOESN'T HAVE OBVIOUS CUTOFF IN THE FRONT)
+# PACF SEEMS LIKE TAPPERING, MAYBE INCLUDE SMA(2)?
+```
+
+##Finding Fitted Model
+```{r}
+##################  FROM dat2_lag11
+## potential combination of (p, q) = (4, 0), (0, 2), (4, 2)
+#### (4,1,0)(0,0,0)[0]
+model2A = sarima(dat2$x,p=4,d=1,q=0,P=0,D=0,Q=0,S=0)   #BAD
+model2A$ttable
+#### (0,1,2)(0,0,0)[0]
+model2A_1 = sarima(dat2$x,p=0,d=1,q=2,P=0,D=0,Q=0,S=0)   #BAD
+model2A_1$ttable
+#### (4,1,2)(0,0,0)[0]
+model2A_2 = sarima(dat2$x,p=4,d=1,q=2,P=0,D=0,Q=0,S=0)   #BAD
+model2A_2$ttable
+
+
+
+################## FROM dat2_lag12
+## potential combination of (p, q) = (1, 0), (0, 2), (1, 2)
+#### (1,1,0)(0,0,0)[0]
+model2B = sarima(dat2$x,p=1,d=1,q=0,P=0,D=0,Q=0,S=0)   #BAD
+model2B$ttable
+#### (0,1,2)(0,0,0)[0]
+model2B_1 = sarima(dat2$x,p=0,d=1,q=2,P=0,D=0,Q=0,S=0)   #IMPROVING
+model2B_1$ttable
+#### (1,1,2)(0,0,0)[0]
+model2B_2 = sarima(dat2$x,p=1,d=1,q=2,P=0,D=0,Q=0,S=0)   #IMPROVING
+model2B_2$ttable
+
+
+
+##################  FROM dat2_lag12_diff
+## potential combination of (p, q) = (8, 0), (0, 2), (8, 2)
+#### (8,1,0)(0,1,0)[12]
+model2C = sarima(dat2$x,p=8,d=1,q=0,P=0,D=1,Q=0,S=12)   #BAD
+model2C$ttable
+#### (0,1,2)(0,1,0)[12]
+model2C_1 = sarima(dat2$x,p=0,d=1,q=2,P=0,D=1,Q=0,S=12)   #IMPROVING
+model2C_1$ttable
+#### (8,1,2)(0,1,0)[12]
+model2C_2 = sarima(dat2$x,p=8,d=1,q=2,P=0,D=1,Q=0,S=12)   #BAD
+model2C_2$ttable
+# FROM THE p-values, suggested AR(1) or AR(2)? instead of AR(8)
+#### (1,1,2)(0,1,0)[12]
+model2C_3 = sarima(dat2$x,p=1,d=1,q=2,P=0,D=1,Q=0,S=12)   #IMPROVING
+model2C_3$ttable
+# FROM THE p-values, MAYBE MA(1) instead of MA(2)?
+#### (1,1,1)(0,1,0)[12]
+model2C_4 = sarima(dat2$x,p=1,d=1,q=1,P=0,D=1,Q=0,S=12)   #IMPROVING
+model2C_4$ttable
+model2C_4
+# STILL NOT GOOD ENOUGH, MAYBE GO BACK TO ACF2 TO SEE IF THERE IS SEASONAL (P,D,Q)?
+# PACF SEEMS LIKE TAPPERING >>> MAYBE INCLUDE SMA(2)?
+#### (1,1,1)(0,1,2)[12]
+model2C_5 = sarima(dat2$x,p=1,d=1,q=1,P=0,D=1,Q=2,S=12)   #VERY GOOD!
+model2C_5$ttable
+model2C_5$AIC
+model2C_5$BIC
+model2C_5$AICc
+
+#### (1,1,1)(0,1,1)[12]
+model2C_6 = sarima(dat2$x,p=1,d=1,q=1,P=0,D=1,Q=1,S=12)   #VERY GOOD!!!!    ######### BEST FOR NOW!!!!!
+model2C_6$ttable
+model2C_6$AIC
+model2C_6$BIC
+model2C_6$AICc
+
+#### (1,1,1)(1,1,2)[12]
+model2B_5 = sarima(dat2$x,p=1,d=1,q=1,P=1,D=1,Q=2,S=12)   #VERY GOOD!!!
+model2B_5$ttable
+model2B_5$AIC
+model2B_5$BIC
+model2B_5$AICc
+
+################## FROM XEINAI
+#### (1,1,1)(1,1,1)[12]
+model2XN = sarima(dat2$x,p=1,d=1,q=1,P=1,D=1,Q=1,S=12)
+model2XN$ttable
+model2XN$AIC
+model2XN$BIC
+model2XN$AICc
+
+model2TT = sarima(dat2$x,p=2,d=1,q=2,P=0,D=1,Q=2,S=12)
+model2TT$ttable
+# p-val suggest SMA(1)
+model2TT_1 = sarima(dat2$x,p=1,d=1,q=2,P=0,D=1,Q=1,S=12)
+model2TT_1$ttable
+####################################################CHOOSE (1,1,1)(0,1,1)[12]
+model2C_5$fit
+```
+
+##MODEL SELECTION
+```{r}
+#### (1,1,1)(0,1,1)[12]
+#model2C_6 = sarima(dat2$x,p=1,d=1,q=1,P=0,D=1,Q=1,S=12)   #VERY GOOD!!!!    ######### BEST FOR NOW!!!!!
+#model2C_6$ttable
+model2C_6$AIC
+model2C_6$BIC
+model2C_6$AICc
+
+#### (1,1,1)(1,1,2)[12]
+#model2B_5 = sarima(dat2$x,p=1,d=1,q=1,P=1,D=1,Q=2,S=12)   #VERY GOOD!!!
+#model2B_5$ttable
+model2B_5$AIC
+model2B_5$BIC
+model2B_5$AICc
+
+################## FROM XEINAI
+#### (1,1,1)(1,1,1)[12]
+#model2XN = sarima(dat2$x,p=1,d=1,q=1,P=1,D=1,Q=1,S=12)
+#model2XN$ttable
+model2XN$AIC
+model2XN$BIC
+model2XN$AICc
+
+
+#######################LOOKING AT THE AIC/BIC/AICc, MODEL: (1,1,1)(0,1,1)[12] is the best! (Having the smallest values)
+model2C_5 = sarima(dat2$x,p=1,d=1,q=1,P=0,D=1,Q=1,S=12)
+```
+
+
+##FORECASTING
+```{r}
+model2C_5
+
+# USING (1,1,1)(0,1,1)[12]
+pred2 <- sarima.for(xdata = dat2$x, n.ahead = 10, p=1,d=1,q=1,P=0,D=1,Q=1,S=12)
+pred2$pred
+plot(dat2$x, type = "l")
+
+```
+
+
+###########################################################################################################################
+
+#Data 3
+```{r}
+plot(dat3, type = "l", main = "Data 3")
+# looks like there are several seasonal factors
+```
+
+
+##Data 3 Transformation
+```{r}
+plot(log(dat3$x), type = "l", main = "log(dat3)")
+# doesn't seem to be doing anything good
+
+# Looks like there is some big seasonal factor which have length 200
+# Difference with lag = 200 (the bigger seasonal factor)
+dat3_lag200 = diff(dat3$x, lag = 200)
+plot(dat3_lag200, type = "l", main = "Differenced data 3 with lag = 200")
+# The mean looks roughly around 0, however, still some seasonal components
+dat3_lag200_diff = diff(diff(dat3$x, lag = 200), lag = 1)
+plot(dat3_lag200_diff, type = "l", main = "diff(diff(dat3$x, lag = 200), lag = 1)")
+
+# looks like there's 10 peeks in each 100 period, cycle would be 100/10 = 10
+# Try lag = 10
+dat3_lag10 = diff(dat3$x, lag = 10)
+plot(dat3_lag10, type = "l", main = "Differenced data 3 with lag = 10")
+# This looks pretty good!
+dat3_lag10_diff = diff(dat3_lag10, lag = 1)
+plot(dat3_lag10_diff, type = "l", main = "diff(diff(dat3$x, lag = 10), lag = 1)")
+# This looks even better (like white noise)
+
+
+dat3_lag12 = diff(dat3$x, lag = 12)
+plot(dat3_lag12, type = "l", main = "Differenced data 3 with lag = 12")
+# Still have seasonal components
+dat3_lag12_diff = diff(diff(dat3$x, lag = 12), lag = 1)
+plot(dat3_lag12_diff, type = "l", main = "diff(diff(dat3$x, lag = 12), lag = 1)")
+# Looks like stationary!
+
+dat3_diff = diff(dat3$x)
+plot(dat3_diff, type = "l", main = "diff(dat3$x)")
+# Also looks like stationary!
+```
+
+**CANDIDATES:**
+dat3_lag200_diff: 
+  diff(diff(dat3$x, lag = 200), lag = 1)
+  # The first difference of the seasonal(200) differenced of data 
+dat3_lag10_diff: 
+  diff(diff(dat3$x, lag = 10), lag = 1)
+  # The first difference of the seasonal(10) differenced of data 
+dat3_lag12_diff:
+  diff(diff(dat3$x, lag = 12), lag = 1)
+  # The first difference of the seasonal(12) differenced of data 
+dat3_diff:
+  diff(dat3$x)
+  # Differenced data with lag = 1
+
+###Check the candidates if stationary using ACF
+```{r}
+acf2(dat3_lag200_diff)
+# potential p = 3, q = 2
+# potential combination of (p, q) = (3, 0), (0, 2), (3, 2)
+# HOWEVER, the PACF seems to be tapering, so in this case maybe it indicates a SMA(2)
+
+
+acf2(dat3_lag10_diff)
+# potential p = 3, q = 2
+# potential combination of (p, q) = (3, 0), (0, 2), (3, 2)
+# HOWEVER, the ACF seems to be tapering, so in this case maybe it indicates a SAR(3)
+# MAYBE PACF is also TAPPERING? NOT SURE...
+
+
+acf2(dat3_lag12_diff)
+# potential p = 4, q = 4
+# potential combination of (p, q) = (4, 0), (0, 4), (4, 4)
+# HOWEVER, the PACF seems to be tapering, so in this case maybe it indicates a SMA(4)
+# MAYBE ACF IS ALSO TAPPERING, SO MAYBE INCLUDE SAR(4)?
+
+
+acf2(dat3_diff)
+# potential p = 3, q = 4
+# potential combination of (p, q) = (3, 0), (0, 4), (3, 4)
+# HOWEVER, the PACF seems to be tapering, so in this case maybe it indicates a SMA(4)
+# But MAYbe ACF also is tappering, in this case, maybe include a bit of SAR(3)
+acf(dat3_diff)
+pacf(dat3_diff)
+```
+
+## Model Fitting
+```{r}
+##################  FROM dat3_lag200_diff
+## potential combination of (p, q) = (3, 0), (0, 2), (3, 2)
+#### (3,1,0)(0,1,0)[200]
+model3A = sarima(dat3$x,p=3,d=1,q=0,P=0,D=1,Q=0,S=200)   #BAD DOESN'T WORK! THERE'S AN ERROR
+model3A$ttable
+#### (0,1,2)(0,1,0)[200]
+model3A_1 = sarima(dat3$x,p=0,d=1,q=2,P=0,D=1,Q=0,S=200)   #BAD DOESN'T WORK! THERE'S AN ERROR
+model3A_1$ttable
+
+## MAYBE LAG = 200 IS TOO BIG?
+
+
+##################  FROM dat3_lag10_diff
+## potential combination of (p, q) = (3, 0), (0, 2), (3, 2)
+#### (3,1,0)(0,1,0)[10]
+model3B = sarima(dat3$x,p=3,d=1,q=0,P=0,D=1,Q=0,S=10)   #IMPROVING
+model3B$ttable
+#### (0,1,2)(0,1,0)[10]
+model3B_1 = sarima(dat3$x,p=0,d=1,q=2,P=0,D=1,Q=0,S=10)   #BAD
+model3B_1$ttable
+#### (3,1,2)(0,1,0)[10]
+model3B_2 = sarima(dat3$x,p=3,d=1,q=2,P=0,D=1,Q=0,S=10)   #BAD
+model3B_2$ttable
+# ar1's p-value looks pretty good, MAYBE CHANGE TO AR(1)?
+#### (1,1,2)(0,1,0)[10]
+model3B_3 = sarima(dat3$x,p=1,d=1,q=2,P=0,D=1,Q=0,S=10)   #BAD
+model3B_3$ttable
+# ACF SEEMS TO BE TAPERING >>> SAR(3)?
+#### (1,1,2)(3,1,0)[10]
+model3B_4 = sarima(dat3$x,p=1,d=1,q=2,P=3,D=1,Q=0,S=10)   #A BIT IMPROVING
+model3B_4$ttable
+# FROM THE p-values, MAYBE try MA(1)?
+#### (1,1,1)(3,1,0)[10]
+model3B_5 = sarima(dat3$x,p=1,d=1,q=1,P=3,D=1,Q=0,S=10)   #BAD
+model3B_5$ttable
+# PACF ALSO? SEEMS TO BE TAPERING >>> SMA(2)?
+#### (1,1,1)(3,1,2)[10]
+model3B_6 = sarima(dat3$x,p=1,d=1,q=1,P=3,D=1,Q=2,S=10)   #BAD
+model3B_6$ttable
+# FROM THE p-values, Suggest SAR(1) and SMA(2)?
+#### (1,1,1)(1,1,2)[10]
+model3B_7 = sarima(dat3$x,p=1,d=1,q=1,P=1,D=1,Q=2,S=10)   #BAD
+model3B_7$ttable
+# FROM THE p-values, Suggest SAR(2)?
+#### (1,1,1)(2,1,2)[10]
+model3B_8 = sarima(dat3$x,p=1,d=1,q=1,P=2,D=1,Q=2,S=10)   #BAD
+model3B_8$ttable
+
+
+##################  FROM dat3_lag12_diff
+## potential combination of (p, q) = (4, 0), (0, 4), (4, 4)
+#### (4,1,0)(0,1,0)[12]
+model3C = sarima(dat3$x,p=4,d=1,q=0,P=0,D=1,Q=0,S=12)   #BAD
+model3C$ttable
+#### (0,1,4)(0,1,0)[12]
+model3C_1 = sarima(dat3$x,p=0,d=1,q=4,P=0,D=1,Q=0,S=12)   #BAD
+model3C_1$ttable
+#### (4,1,4)(0,1,0)[12]
+model3C_2 = sarima(dat3$x,p=4,d=1,q=4,P=0,D=1,Q=0,S=12)   #BAD
+model3C_2$ttable
+# PACF SEEMS TO BE TAPERING >>> SMA(4)?
+#### (4,1,4)(0,1,4)[12]
+model3C_3 = sarima(dat3$x,p=4,d=1,q=4,P=0,D=1,Q=4,S=12)   #A BIT BETTER IN THE END?
+model3C_3$ttable
+# FROM THE p-values, Suggest AR(2)? MA(2) or MA(3)? SMA(1) or SMA(2)?
+#### (2,1,2)(0,1,1)[12]
+model3C_4 = sarima(dat3$x,p=2,d=1,q=2,P=0,D=1,Q=1,S=12)   #A BIT IMPROVING? 
+model3C_4$ttable
+#### (2,1,3)(0,1,1)[12]
+model3C_5 = sarima(dat3$x,p=2,d=1,q=3,P=0,D=1,Q=1,S=12)   #IMPROVING
+model3C_5$ttable
+# FROM THE p-values, Suggest NO AR?
+#### (0,1,3)(0,1,1)[12]
+model3C_6 = sarima(dat3$x,p=0,d=1,q=3,P=0,D=1,Q=1,S=12)   #WORSE
+model3C_6$ttable
+# FROM THE p-values, Suggest MA(1) or MA(2)?
+#### (0,1,1)(0,1,1)[12]
+model3C_7 = sarima(dat3$x,p=0,d=1,q=1,P=0,D=1,Q=1,S=12)   #WORSE
+model3C_7$ttable
+#### (0,1,2)(0,1,1)[12]
+model3C_8 = sarima(dat3$x,p=0,d=1,q=2,P=0,D=1,Q=1,S=12)   #WORSE
+model3C_8$ttable
+# SEEMS LIKE THERE SHOULD BE AR INCLUDED, CANNOT DELETE IT!
+# BACK TO model3C_5 results, and take a look at the acf2 again!
+# BACK TO THE ACF2 PLOT, MAYBE ACF IS ALSO TAPPERING?
+# MAYBE TRY SAR(4)?
+#### (2,1,3)(4,1,1)[12]
+model3C_9 = sarima(dat3$x,p=2,d=1,q=3,P=4,D=1,Q=1,S=12)   #IMPROVING, BUT STILL WORSE THEN model3C_5
+model3C_9$ttable
+# FROM THE p-values, MAYBE SAR(2)?
+#### (2,1,3)(2,1,1)[12]
+model3C_10 = sarima(dat3$x,p=2,d=1,q=3,P=2,D=1,Q=1,S=12)   #IMPROVING, BUT STILL WORSE THEN model3C_5
+model3C_10$ttable
+# FROM THE p-values, MAYBE AR(1) and MA(2)?
+#### (1,1,2)(2,1,1)[12]
+model3C_11 = sarima(dat3$x,p=1,d=1,q=2,P=2,D=1,Q=1,S=12)   #IMPROVING, BUT STILL WORSE THEN model3C_5
+model3C_11$ttable
+# FROM THE p-values, MAYBE MA(1)?
+#### (1,1,1)(2,1,1)[12]
+model3C_12 = sarima(dat3$x,p=1,d=1,q=1,P=2,D=1,Q=1,S=12)   #IMPROVING, BUT STILL WORSE THEN model3C_5
+model3C_12$ttable
+# SEEMS LIKE GOING NOWHERE! TRY auto.arima FOR SOME CLUE!
+
+auto.arima(dat3$x)
+# FROM auto.arima(dat3$x), MAYBE TRY ARIMA(1,0,2)?
+#### (1,0,2)(0,0,0)[0]
+model3C_13 = sarima(dat3$x,p=1,d=0,q=2,P=0,D=0,Q=0,S=0)   #BAD
+model3C_13$ttable
+# MAYBE ADD BACK THE P, D, Q, S part?
+#### (1,0,2)(2,1,1)[12]
+model3C_14 = sarima(dat3$x,p=1,d=0,q=2,P=2,D=1,Q=1,S=12)   #IMPROVING, BUT STILL WORSE THEN model3C_5
+model3C_14$ttable
+# NOT GOING ANYWHERE!
+
+##################  AUTO.ARIMA
+auto.arima(dat3$x)
+# Suggested ARIMA(1,0,2)
+auto.arima(dat3$x, stepwise = FALSE, approximation = FALSE)
+# Suggested ARIMA(1,0,4)
+
+
+##################  FROM dat3_diff
+## potential combination of (p, q) = (3, 0), (0, 4), (3, 4)
+#### (3,1,0)(0,0,0)[0]
+model3D = sarima(dat3$x,p=3,d=1,q=0,P=0,D=0,Q=0,S=0)   #BAD 
+model3D$ttable
+#### (0,1,4)(0,0,0)[0]
+model3D_1 = sarima(dat3$x,p=0,d=1,q=4,P=0,D=0,Q=0,S=0)   #PRETTY GOOD!!!! ALL ABOVE DASH ######### BEST FOR NOW!!!!!
+model3D_1$ttable
+model3D_1$AIC
+model3D_1$BIC
+model3D_1$AICc
+# SEE IF WE CAN GET BETTER RESULT >>> KEEP TRYING
+#### (3,1,4)(0,0,0)[0]
+model3D_2 = sarima(dat3$x,p=3,d=1,q=4,P=0,D=0,Q=0,S=0)   #A BIT WORSE THAN model3D_1
+model3D_2$ttable
+
+
+################## FROM XEINAI                  #model3D_1 is still better
+#### (1,1,3)(0,0,0)[0]
+#model3XN = sarima(dat3$x,p=1,d=1,q=3,P=0,D=0,Q=0,S=0)
+#model3XN$ttable
+model3XN$AIC
+model3XN$BIC
+model3XN$AICc
+#model3XN_1 = sarima(dat3$x,p=1,d=1,q=3,P=2,D=1,Q=1,S=12)
+#model3XN_1$ttable
+model3XN_1$AIC
+model3XN_1$BIC
+model3XN_1$AICc
+
+
+
+####################################################CHOOSE (0,1,4)(0,0,0)[0]
+#model3D_1 = sarima(dat3$x,p=0,d=1,q=4,P=0,D=0,Q=0,S=0) 
+#model3D_1$fit
+model3D_1$AIC
+model3D_1$BIC
+model3D_1$AICc
+```
+
+##FORECASTING
+```{r}
+# USING (0,1,4)(0,0,0)[0]
+pred3 <- sarima.for(xdata = dat3$x, n.ahead = 10, p=0,d=1,q=4,P=0,D=0,Q=0,S=0)
+pred3$pred
+plot(dat3$x, type = "l")
+```
+
+
