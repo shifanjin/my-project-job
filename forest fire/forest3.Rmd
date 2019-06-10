@@ -1,0 +1,240 @@
+---
+title: "Forest Fire Project Part 3"
+author: "Changning Liu, Shi Fan Jin, Esther Law"
+date: "April 30, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# setwd("H:/edu/cs/ucb 151a/my project")
+# library(car)
+library(dplyr)
+library(corrplot)
+library(MASS)
+```
+
+```{r,include=FALSE}
+rawdata<-read.csv("forestfires.csv", header=TRUE)
+```
+
+## Introduction
+In this final project, we are required to analyze the Forest Fires dataset, which contains information on forest fire data from the Montesinho natural park in northeast Portugal. The data were collected from January 2000 to December 2003 and there are 517 observations of 13 variables, listed below  
+
+* Spatial and temporal variables
+    (a) X - x-axis spatial coordinate within the Montesinho park map: 1 to 9
+    (b) Y - y-axis spatial coordinate within the Montesinho park map: 2 to 9
+    (c) month - month of the year: 'jan' to 'dec'
+    (d) day - day of the week: 'mon' to 'sun'
+* FWI component variables: The forest Fire Weather Index is the Canadian system for rating fire danger
+    (a) FFMC - FFMC index denotes the moisture content surface litter and influences ignition and
+fire spread: 18.7 to 96.20
+    (b) DMC - DMC index represent the moisture content of shallow organic layers: 1.1 to 291.3
+    (c) DC - DC index represent the moisture content of deep organic layers: 7.9 to 860.6
+    (d) ISI - ISI index is a score that correlates with fire velocity spread: 0.0 to 56.10
+* Weather variables
+    (a) temp - temperature in Celsius degrees: 2.2 to 33.30
+    (b) RH - relative humidity in %: 15.0 to 100
+    (c) wind - wind speed in km/h: 0.40 to 9.40
+    (d) rain: outside rain (in mm=m2); denotes the accumulated precipitation within the previous 30
+minutes.
+* Area: total burned area (in hectares). Note that all the entries denote fire occurrences and a value
+of zero indicates that the burned area was less than 0.01 hectares or 100m2.  
+
+My goal is to analyze the relationship between the size of the burned area of forest fires and the meteorological and other variables given and I want to find out the variables that influence the total burned area in forest fires.  
+
+##Data exploration
+I first check the data structure to get a preliminary idea about the data including the typeand quantile of each variable,etc. Also, I observed the distribution of our response variable, area. It appears that our response variable is highly right skewed which implies that a log transformation may be helpful when conducting regression analysis. And since our purpose is to predict the size of burned area and find the variables that may influence the size of fire, I only focus on the data that have positive burned area.
+
+```{r,echo = FALSE}
+str(rawdata)
+summary(rawdata)
+par(mfrow=c(1,2))
+plot(density(rawdata$area),main = "area")
+data1<-rawdata[rawdata$area>0,]
+plot(density(data1$area+1),main="when area is larger than 0")
+```
+I then try to explore the explanatory variables. First, I plot the boxplots for the Spatial and temporal variables. I also re-order the factors month and day so that the order now are from jan to dec and Monday to Sunday. It appears that for different months the number of fires differ significantly. For example there are no fire obesrved in jan and nov while a great amount of fires was found in aug and sep. It may implies that month is an influential variable. Also in order to better analysis the factor variables month and day, I changed these data into type integer.
+```{r, echo=FALSE}
+par(mfrow=c(2,2))
+boxplot(log(data1$area+1)~data1$X,  xlab = "X", ylab = "fire area",
+main = "fire area for each X's")
+boxplot(log(data1$area+1)~data1$Y,  xlab = "Y", ylab = "fire area",
+main = "fire area for each Y's")
+MONTH <- factor(data1$month, order=TRUE,
+levels=c("jan", "feb", "mar","apr","may","jun","jul","aug","sep","oct","nov","dec"))
+boxplot(log(data1$area+1)~MONTH,xlab = "month", ylab = "fire area", main = "forest fire area for each month")
+DAY <-factor(data1$day, order=TRUE,
+levels=c("mon", "tue", "wed","thu","fri","sat","sun"))
+boxplot(log(data1$area+1)~DAY,xlab = "day", ylab = "fire area", main = "forest fire area for each day")
+data1$month <- as.integer(MONTH)
+data1$day<-as.integer(DAY)
+```
+
+I then try to explore the distribution of the explanatory variables expecially the distributions of  FWI component variables and weather variables. It appears that FFMC and rain are heavily skewed which suggest transformation maybe helpful.  
+
+```{r,echo=FALSE}
+par(mfrow=c(2,4))
+plot(density(data1$FFMC),main = "FFMC")
+plot(density(data1$DMC),main = "DMC")
+plot(density(data1$DC),main = "DC")
+plot(density(data1$ISI),main = "ISI")
+plot(density(data1$temp),main = "temp")
+plot(density(data1$RH), main = "RH")
+plot(density(data1$wind), main = "wind")
+plot(density(data1$rain), main = "rain")
+
+```
+Another thing I want to know is the correlation among the explainatory variables especially the correlation among FWI component variables and weather variables.I plot both the scattermatrix plot and corrplot.
+
+```{r,echo=FALSE}
+pairs(data1[, 1:13])
+corrplot(cor(data1), method="ellipse")
+cor(data1[ ,1:6])
+cor(data1[ ,7:13])
+```
+
+To view the correlation more clearly, I compared the explainatory variables(FWI and weather variables) one-by-one. I found that there exist a moderate to strong positive correlation between FFMC and ISI,DMC and DC,while at the same time there is a moderate to strong negative correlation between  temp and RH,etc. 
+
+```{r, echo=FALSE}
+par(mfrow=c(3,4))
+with(data1, plot(FFMC ~ DMC, pch = 19, cex = 0.7))
+with(data1, plot(FFMC ~ DC, pch = 19, cex = 0.7))
+with(data1, plot(FFMC ~ ISI, pch = 19, cex = 0.7))
+with(data1, plot(DMC ~ DC, pch = 19, cex = 0.7))
+with(data1, plot(DMC ~ ISI, pch = 19, cex = 0.7))
+with(data1, plot(temp ~ RH, pch = 19, cex = 0.7))
+with(data1, plot(temp ~ RH, pch = 19, cex = 0.7))
+with(data1, plot(temp ~ wind, pch = 19, cex = 0.7))
+with(data1, plot(temp ~ rain, pch = 19, cex = 0.7))
+with(data1, plot(temp ~ RH, pch = 19, cex = 0.7))
+with(data1, plot(RH ~ wind, pch = 19, cex = 0.7))
+with(data1, plot(RH ~ rain, pch = 19, cex = 0.7))
+```
+
+## Regression analysis
+Now let'S do the regression, I started with the easiest full model with out interaction term. But it seems this model fit terriable. There is an obvious pattern among the residuals and fitted value, and only about 3.8% of the variation can be explained by the model.  
+
+```{r,echo=FALSE}
+
+fullmodel.lm <- lm(data1$area ~ .,data = data1)
+summary(fullmodel.lm)
+par(mfrow=c(2,2))
+plot(fullmodel.lm)
+
+```
+
+As mentioned earlier, I try to log transform the area variable and FFMC. Also I dropped the variable rain since only 2 out of 270 observations that have nonegative value and from it's p-value of the full model implies that it is not statistically significant.  
+* modified1.lm <-lm(log(data1$area+1)~X+Y+month+day+FFMC_LOG+DMC+DC+ISI+temp+
+                                      RH+wind,data = data1)  
+
+This time it seems that the modified model is better than the previous one, at least the residuals vs fitted value seems to be random.
+
+
+```{r,echo=FALSE}
+FFMC_LOG <- log(data1$FFMC)
+modified1.lm <-lm(log(data1$area+1)~X+Y+month+day+FFMC_LOG+DMC+DC+ISI+temp+RH+wind,data = data1)
+summary(modified1.lm)
+par(mfrow=c(2,2))
+plot(modified1.lm)
+```
+
+Now I try to add the interaction terms.  
+* modified2.lm<-lm(log(data1$area+1)~X+Y+month+day+FFMC_LOG+DMC+DC+ISI+temp+RH+wind+  
+FFMC_DMC+FFMC_DC+FFMC_ISI +DMC_DC+DMC_ISI+DC_ISI+temp_RH+temp_wind+RH_wind,  
+data = data1)  
+
+The model now may able to explain 7.5% of the variation and the residuals seems to be random.  
+
+```{r,echo=FALSE}
+FFMC_DMC <- data1$FFMC*data1$DMC
+FFMC_DC <-data1$FFMC*data1$DC
+FFMC_ISI <-data1$FFMC*data1$ISI
+DMC_DC<-data1$DMC*data1$DC
+DMC_ISI<-data1$DMC*data1$ISI
+DC_ISI<-data1$DC*data1$ISI
+temp_RH<-data1$temp*data1$RH
+temp_wind<-data1$temp*data1$wind
+RH_wind<-data1$RH*data1$wind
+modified2.lm <-lm(log(data1$area+1)~X+Y+month+day+FFMC_LOG+DMC+DC+ISI+temp+RH+wind+FFMC_DMC+FFMC_DC+FFMC_ISI+DMC_DC+DMC_ISI+DC_ISI+temp_RH+temp_wind+RH_wind,data = data1)
+summary(modified2.lm)
+par(mfrow=c(2,2))
+plot(modified2.lm)
+
+```
+From the boxplot and density plot of the explainatory varable I made previously, I find some outliers, so I tried to find the influential points according to cook distance. I detected ten points that have high cook distance. Let's discard these observations to seem how much our model will improve without these data.  
+
+* modified3.lm <-lm(log(data3$area+1)~X+Y+month+day+FFMC_LOG3+DMC+DC+ISI+temp  
+                                      +RH+wind+FFMC_DMC3+FFMC_DC3+FFMC_ISI3  
+                                      +DMC_DC3+DMC_ISI3+DC_ISI3+temp_RH3+temp_wind3  
+                                      +RH_wind3,data = data3)
+
+
+```{r,echo=FALSE}
+cook <- cooks.distance(modified2.lm)
+data2 <- cbind(data1, cook)
+data2[cook > 4/((nrow(data1)-length(modified2.lm$coefficients)-2)) , ]
+data3 <- data1[!row.names(data1) %in% c(212,224,363,378,416,421,470,480,489,514),]
+FFMC_LOG3 <- log(data3$FFMC)
+FFMC_DMC3 <- data3$FFMC*data3$DMC
+FFMC_DC3<-data3$FFMC*data3$DC
+FFMC_ISI3 <-data3$FFMC*data3$ISI
+DMC_DC3<-data3$DMC*data3$DC
+DMC_ISI3<-data3$DMC*data3$ISI
+DC_ISI3<-data3$DC*data3$ISI
+temp_RH3<-data3$temp*data3$RH
+temp_wind3<-data3$temp*data3$wind
+RH_wind3<-data3$RH*data3$wind
+modified3.lm <-lm(log(data3$area+1)~X+Y+month+day+FFMC_LOG3+DMC+DC+ISI+temp+RH+wind+FFMC_DMC3+FFMC_DC3+FFMC_ISI3+DMC_DC3+DMC_ISI3+DC_ISI3+temp_RH3+temp_wind3+RH_wind3,data = data3)
+summary(modified3.lm)
+par(mfrow=c(2,2))
+plot(modified3.lm)
+```
+
+It seems that after discarding the influential points, my model can explain more of the variation. However I am not quite sure whether it is legitmate to drop this points because I can not say these data are wrong. I did this just due to the assumption that a linear model is appropriate and my model is correct.  
+
+My final attempt is to add some quadratic form of the FWI and weather variables into the model. I am not sure if these are helpful but if they are they may improve my model and if not they will be dropped when I shrink our model use AIC method. 
+
+* fullmodel2.lm <- lm(log(data3$area+1)~X+Y+month+day+FFMC_LOG3+DMC+DC+ISI
+                                        +temp+RH+wind+FFMC_DMC3+FFMC_DC3+FFMC_ISI3
+                                        +DMC_DC3+DMC_ISI3 +DC_ISI3+temp_RH3+temp_wind3
+                                        +RH_wind3+FFMC_SQ+DMC_SQ+DC_SQ+ISI_SQ
+                                        +temp_SQ +wind_SQ+RH_SQ,data=data3)  
+
+```{r, echo=FALSE}
+FFMC_SQ<-(data3$FFMC)^2
+DMC_SQ<-(data3$DMC)^2
+DC_SQ<-(data3$DC)^2
+ISI_SQ<-(data3$ISI)^2
+temp_SQ<-(data3$temp)^2
+wind_SQ<-(data3$wind)^2
+RH_SQ<-(data3$RH)^2
+fullmodel2.lm <- lm(log(data3$area+1)~X+Y+month+day+FFMC_LOG3+DMC+DC+ISI+temp+RH+wind+FFMC_DMC3+FFMC_DC3+FFMC_ISI3+DMC_DC3+DMC_ISI3+DC_ISI3+temp_RH3+temp_wind3+RH_wind3+FFMC_SQ+DMC_SQ+DC_SQ+ISI_SQ+temp_SQ+wind_SQ+RH_SQ,data=data3)
+summary(fullmodel2.lm)
+par(mfrow=c(2,2))
+plot(fullmodel2.lm)
+```
+
+Finally, let's run the step function to see what the final model would be.
+
+```{r,echo=FALSE}
+step(fullmodel2.lm)
+```
+Now let's check our final model.  
+* finalmodel.lm <-lm(log(data3$area + 1) ~ month + day + wind + FFMC_DMC3 + 
+                                          FFMC_DC3 + DMC_DC3+ temp_RH3 + DC_SQ +
+                                          wind_SQ, data = data3)  
+                                          
+Although the r-squared seems to be low,it is still much better than my origional model.
+```{r,echo=FALSE}
+finalmodel.lm <-lm(log(data3$area + 1) ~ month + day + wind + FFMC_DMC3 + 
+    FFMC_DC3 + DMC_DC3 + temp_RH3 + DC_SQ + wind_SQ, data = data3)
+summary(finalmodel.lm)
+par(mfrow=c(2,2))
+plot(finalmodel.lm)
+```
+
+## Conclusion
+unfortunately, my model can only explain a tiny proportation of the total variation. The possible explaination are either the data itself can only explained that much information or a linear model is not sufficient to do the work. So, maybe I shall turn to nonlinear regression to solve the problem. Anyway, based on my model, month, day,DMC,DC,FFMC,RH wind are the influential variables that may affect the size of a forest fires.
+
+
