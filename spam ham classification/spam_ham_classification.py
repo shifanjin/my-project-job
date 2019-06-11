@@ -9,54 +9,20 @@ from client.api.notebook import Notebook
 ok = Notebook('proj2.ok')
 
 
-# # Project 2: Spam/Ham Classification
+# # Project : Spam/Ham Classification
 # ## Feature Engineering, Logistic Regression, Cross Validation
-# ## Due Date: Tuesday 4/16/19, 6:00PM
 # 
-# **Collaboration Policy**
-# 
-# Data science is a collaborative activity. While you may talk with others about
-# the project, we ask that you **write your solutions individually**. If you do
-# discuss the assignments with others please **include their names** at the top
-# of your notebook.
 
-# **Collaborators**: *list collaborators here*
 
-# ## This Assignment
-# In this project, you will use what you've learned in class to create a classifier that can distinguish spam (junk or commercial or bulk) emails from ham (non-spam) emails. In addition to providing some skeleton code to fill in, we will evaluate your work based on your model's accuracy and your written responses in this notebook.
+# ## This Project
+# In this project, create a classifier that can distinguish spam (junk or commercial or bulk) emails from ham (non-spam) emails.
 # 
-# After this project, you should feel comfortable with the following:
 # 
 # - Feature engineering with text data
 # - Using sklearn libraries to process data and fit models
 # - Validating the performance of your model and minimizing overfitting
 # - Generating and analyzing precision-recall curves
 # 
-# ## Warning
-# We've tried our best to filter the data for anything blatantly offensive as best as we can, but unfortunately there may still be some examples you may find in poor taste. If you encounter these examples and believe it is inappropriate for students, please let a TA know and we will try to remove it for future semesters. Thanks for your understanding!
-
-# ## Score Breakdown
-# Question | Points
-# --- | ---
-# 1a | 1
-# 1b | 1
-# 1c | 2
-# 2 | 3
-# 3a | 2
-# 3b | 2
-# 4 | 2
-# 5 | 2
-# 6a | 1
-# 6b | 1
-# 6c | 2
-# 6d | 2
-# 6e | 1
-# 6f | 3
-# 7 | 6
-# 8 | 6
-# 9 | 3
-# 10 | 15
-# Total | 55
 
 # # Part I - Initial Analysis
 
@@ -79,18 +45,18 @@ sns.set(style = "whitegrid",
 # 
 # In email classification, our goal is to classify emails as spam or not spam (referred to as "ham") using features generated from the text in the email. 
 # 
-# The dataset consists of email messages and their labels (0 for ham, 1 for spam). Your labeled training dataset contains 8348 labeled examples, and the test set contains 1000 unlabeled examples.
+# The dataset consists of email messages and their labels (0 for ham, 1 for spam). The labeled training dataset contains 8348 labeled examples, and the test set contains 1000 unlabeled examples.
 # 
 # Run the following cells to load in the data into DataFrames.
 # 
-# The `train` DataFrame contains labeled data that you will use to train your model. It contains four columns:
+# The `train` DataFrame contains labeled data that will be used to train your model. It contains four columns:
 # 
 # 1. `id`: An identifier for the training example
 # 1. `subject`: The subject of the email
 # 1. `email`: The text of the email
 # 1. `spam`: 1 if the email is spam, 0 if the email is ham (not spam)
 # 
-# The `test` DataFrame contains 1000 unlabeled emails. You will predict labels for these emails and submit your predictions to Kaggle for evaluation.
+# The `test` DataFrame contains 1000 unlabeled emails. Predict labels for these emails.
 
 # In[3]:
 
@@ -825,16 +791,13 @@ print('Created a CSV file: {}.'.format("submission_{}.csv".format(timestamp)))
 print('You may now upload this CSV file to Kaggle for scoring.')
 
 
-# # Submit
-# Make sure you have run all cells in your notebook in order before running the cell below, so that all images/graphs appear in the output.
-# **Please save before submitting!**
+
 # 
 # <!-- EXPECT 9 EXPORTED QUESTIONS -->
 
 # In[59]:
 
 
-# Save your notebook first, then run this cell to submit.
 import jassign.to_pdf
 jassign.to_pdf.generate_pdf('proj2.ipynb', 'proj2.pdf')
 ok.submit()
