@@ -9,80 +9,23 @@ from client.api.notebook import Notebook
 ok = Notebook('proj1.ok')
 
 
-# # Project 1: Food Safety 
+# # Project: Food Safety 
 # ## Cleaning and Exploring Data with Pandas
-# ## Due Date: Tuesday 2/12, 6:00 PM
-# ## Collaboration Policy
-# 
-# Data science is a collaborative activity. While you may talk with others about
-# the project, we ask that you **write your solutions individually**. If you do
-# discuss the assignments with others please **include their names** at the top
-# of your notebook.
 
-# **Collaborators**: *list collaborators here*
 
 # 
-# ## This Assignment
+# ## This Project
 # <img src="scoreCard.jpg" width=400>
 # 
-# In this project, you will investigate restaurant food safety scores for restaurants in San Francisco. Above is a sample score card for a restaurant. The scores and violation information have been made available by the San Francisco Department of Public Health. The main goal for this assignment is to understand how restaurants are scored. We will walk through various steps of exploratory data analysis to do this. We will provide comments and insights along the way to give you a sense of how we arrive at each discovery and what next steps it leads to.
-# 
-# As we clean and explore these data, you will gain practice with:
+# In this project, investigate restaurant food safety scores for restaurants in San Francisco. Above is a sample score card for a restaurant. The scores and violation information have been made available by the San Francisco Department of Public Health. 
+# The main goal for this project is to understand how restaurants are scored. 
+# Project includes:
 # * Reading simple csv files
 # * Working with data at different levels of granularity
 # * Identifying the type of data collected, missing values, anomalies, etc.
 # * Applying probability sampling techniques
 # * Exploring characteristics and distributions of individual variables
 # 
-# ## Score Breakdown
-# Question | Points
-# --- | ---
-# 1a | 1
-# 1b | 0
-# 1c | 0
-# 1d | 3
-# 1e | 1
-# 2a | 1
-# 2b | 2
-# 3a | 2
-# 3b | 0
-# 3c | 2
-# 3d | 1
-# 3e | 1
-# 3f | 1
-# 4a | 1
-# 4b | 1
-# 4c | 1
-# 4d | 1
-# 4e | 1
-# 4f | 1
-# 4g | 2
-# 4h | 1
-# 4i | 1
-# 5a | 2
-# 5b | 3
-# 6a | 1
-# 6b | 1
-# 6c | 1
-# 7a | 2
-# 7b | 3
-# 7c | 3
-# 8a | 2
-# 8b | 2
-# 8c | 6
-# 8d | 2
-# 8e | 3
-# Total | 56
-
-# To start the assignment, run the cell below to set up some imports and the automatic tests that we will need for this assignment:
-# 
-# In many of these assignments (and your future adventures as a data scientist) you will use `os`, `zipfile`, `pandas`, `numpy`, `matplotlib.pyplot`, and optionally `seaborn`.  
-# 
-# 1. Import each of these libraries `as` their commonly used abbreviations (e.g., `pd`, `np`, `plt`, and `sns`).  
-# 1. Don't forget to include `%matplotlib inline` which enables [inline matploblib plots](http://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-matplotlib). 
-# 1. If you want to use `seaborn`, add the line `sns.set()` to make your plots look nicer.
-
-# In[397]:
 
 
 #...
@@ -110,7 +53,7 @@ assert 'matplotlib'in sys.modules and plt
 
 # ## Downloading the Data
 # 
-# For this assignment, we need this data file: http://www.ds100.org/sp19/assets/datasets/proj1-SFBusinesses.zip
+# For this project, we need this data file: http://www.ds100.org/sp19/assets/datasets/proj1-SFBusinesses.zip
 # 
 # We could write a few lines of code that are built to download this specific data file, but it's a better idea to have a general function that we can reuse for all of our assignments. Since this class isn't really about the nuances of the Python file system libraries, we've provided a function for you in ds100_utils.py called `fetch_and_cache` that can download files from the internet.
 # 
@@ -158,17 +101,8 @@ get_ipython().system('ls')
 # 
 # Let's start by looking at the contents of `data.zip`. It's not just a single file, but a compressed directory of multiple files. We could inspect it by uncompressing it using a shell command such as `!unzip data.zip`, but in this project we're going to do almost everything in Python for maximum portability.
 
-# ### Question 1a: Looking Inside and Extracting the Zip Files
+# ### Part 1a: Looking Inside and Extracting the Zip Files
 # 
-# Assign `my_zip` to a `Zipfile.zipfile` object representing `data.zip`, and 1ssign `list_files` to a list of all the names of the files in `data.zip`.
-# 
-# *Hint*: The [Python docs](https://docs.python.org/3/library/zipfile.html) describe how to create a `zipfile.ZipFile` object. You might also look back at the code from lecture and lab. It's OK to copy and paste code from previous assignments and demos, though you might get more out of this exercise if you type out an answer.
-# 
-# <!--
-# BEGIN QUESTION
-# name: q1a
-# points: 1
-# -->
 
 # In[401]:
 
@@ -186,21 +120,6 @@ list_names
 ok.grade("q1a");
 
 
-# In your answer above, if you have written something like `zipfile.ZipFile('data.zip', ...)`, we suggest changing it to read `zipfile.ZipFile(dest_path, ...)`. In general, we **strongly suggest having your filenames hard coded as string literals only once** in a notebook. It is very dangerous to hard code things twice, because if you change one but forget to change the other, you can end up with bugs that are very hard to find.
-
-# Now display the files' names and their sizes.
-# 
-# If you're not sure how to proceed, read about the attributes of a `ZipFile` object in the Python docs linked above.
-
-# In[11]:
-
-
-...
-
-
-# Often when working with zipped data, we'll never unzip the actual zipfile. This saves space on our local computer. However, for this project, the files are small, so we're just going to unzip everything. This has the added benefit that you can look inside the csv files using a text editor, which might be handy for understanding what's going on. The cell below will unzip the csv files into a subdirectory called `data`. Just run it.
-
-# In[403]:
 
 
 from pathlib import Path
@@ -209,20 +128,9 @@ my_zip.extractall(data_dir)
 get_ipython().system('ls {data_dir}')
 
 
-# The cell above created a folder called `data`, and in it there should be four CSV files. Open up `legend.csv` to see its contents. You should see something that looks like:
-# 
-#     "Minimum_Score","Maximum_Score","Description"
-#     0,70,"Poor"
-#     71,85,"Needs Improvement"
-#     86,90,"Adequate"
-#     91,100,"Good"
+# The cell above created a folder called `data`, and in it there should be four CSV files. Open up `legend.csv` to see its contents. 
 
-# ### Question 1b: Programatically Looking Inside the Files
-
-# The `legend.csv` file does indeed look like a well-formed CSV file. Let's check the other three files. Rather than opening up each file manually, let's use Python to print out the first 5 lines of each. The `ds100_utils` library has a method called `head` that will allow you to retrieve the first N lines of a file as a list. For example `ds100_utils.head('data/legend.csv', 5)` will return the first 5 lines of "data/legend.csv". Try using this function to print out the first 5 lines of all four files that we just extracted from the zipfile.
-
-# In[404]:
-
+# ### Part 1b: Programatically Looking Inside the Files
 
 #...
 ds100_utils.head('data/businesses.csv', 5)
@@ -231,13 +139,8 @@ ds100_utils.head('data/legend.csv', 5)
 ds100_utils.head('data/violations.csv', 5)
 
 
-# ### Question 1c: Reading in the Files
+# ### Part 1c: Reading in the Files
 # 
-# Based on the above information, let's attempt to load `businesses.csv`, `inspections.csv`, and `violations.csv` into pandas data frames with the following names: `bus`, `ins`, and `vio` respectively.
-# 
-# *Note:* Because of character encoding issues one of the files (`bus`) will require an additional argument `encoding='ISO-8859-1'` when calling `pd.read_csv`. One day you should read all about [character encodings](https://www.diveinto.org/python3/strings.html).
-
-# In[405]:
 
 
 # path to directory containing data
@@ -247,22 +150,10 @@ bus = pd.read_csv("data/businesses.csv", encoding='ISO-8859-1')
 ins = pd.read_csv("data/inspections.csv")
 vio = pd.read_csv("data/violations.csv")
 
-
-# Now that you've read in the files, let's try some `pd.DataFrame` methods ([docs](https://pandas.pydata.org/pandas-docs/version/0.21/generated/pandas.DataFrame.html)).
-# Use the `DataFrame.head` method to show the top few lines of the `bus`, `ins`, and `vio` dataframes. Use `Dataframe.describe` to learn about the numeric columns.
-
-# In[406]:
-
-
 #...
 bus.head()
 ins.head()
 vio.head()
-
-
-# The `DataFrame.describe` method can also be handy for computing summaries of various statistics of our dataframes. Try it out with each of our 3 dataframes.
-
-# In[409]:
 
 
 #...
@@ -272,11 +163,6 @@ vio.describe()
 len(bus)
 
 
-# Now, we perform some sanity checks for you to verify that you loaded the data with the right structure. Run the following cells to load some basic utilities (you do not need to change these at all):
-
-# First, we check the basic structure of the data frames you created:
-
-# In[410]:
 
 
 assert all(bus.columns == ['business_id', 'name', 'address', 'city', 'state', 'postal_code',
@@ -290,9 +176,6 @@ assert all(vio.columns == ['business_id', 'date', 'description'])
 assert 39020 <= len(vio) <= 39080
 
 
-# Next we'll check that the statistics match what we expect. The following are hard-coded statistical summaries of the correct data.
-
-# In[411]:
 
 
 bus_summary = pd.DataFrame(**{'columns': ['business_id', 'latitude', 'longitude'],
@@ -324,21 +207,11 @@ display(vio_summary)
 
 # The code below defines a testing function that we'll use to verify that your data has the same statistics as what we expect. Run these cells to define the function. The `df_allclose` function has this name because we are verifying that all of the statistics for your dataframe are close to the expected values. Why not `df_allequal`? It's a bad idea in almost all cases to compare two floating point values like 37.780435, as rounding error can cause spurious failures.
 
-# ## Question 1d: Verifying the data
+# ## Part 1d: Verifying the data
 # 
-# Now let's run the automated tests. If your dataframes are correct, then the following cell will seem to do nothing, which is a good thing! However, if your variables don't match the correct answers in the main summary statistics shown above, an exception will be raised.
-# 
-# <!--
-# BEGIN QUESTION
-# name: q1d
-# points: 3
-# -->
-
-# In[412]:
-
 
 """Run this cell to load this utility comparison function that we will use in various
-tests below (both tests you can see and those we run internally for grading).
+tests below 
 
 Do not modify the function in any way.
 """
@@ -377,17 +250,8 @@ def df_allclose(actual, desired, columns=None, rtol=5e-2):
 ok.grade("q1d");
 
 
-# ### Question 1e: Identifying Issues with the Data
+# ### Part 1e: Identifying Issues with the Data
 
-# Use the `head` command on your three files again. This time, describe at least one potential problem with the data you see. Consider issues with missing values and bad data.
-# 
-# <!--
-# BEGIN QUESTION
-# name: q1e
-# manual: True
-# points: 1
-# -->
-# <!-- EXPORT TO PDF -->
 
 # In bus.head(), we can see that the phone_number column has NaN values.
 
@@ -396,23 +260,12 @@ ok.grade("q1d");
 # ---
 # ## 2: Examining the Business Data
 # 
-# From its name alone, we expect the `businesses.csv` file to contain information about the restaurants. Let's investigate the granularity of this dataset.
-# 
-# **Important note: From now on, the local autograder tests will not be comprehensive. You can pass the automated tests in your notebook but still fail tests in the autograder.** Please be sure to check your results carefully.
-
-# ### Question 2a
+# ### Part 2a
 # 
 # Examining the entries in `bus`, is the `business_id` unique for each record? Your code should compute the answer, i.e. don't just hard code `True` or `False`.
 # 
 # Hint: use `value_counts()` or `unique()` to determine if the `business_id` series has any duplicates.
 # 
-# <!--
-# BEGIN QUESTION
-# name: q2a
-# points: 1
-# -->
-
-# In[414]:
 
 
 helper = bus['business_id'].value_counts().unique()
@@ -429,7 +282,7 @@ is_business_id_unique
 ok.grade("q2a");
 
 
-# ### Question 2b
+# ### Part 2b
 # 
 # With this information, you can address the question of granularity. Answer the questions below.
 # 
@@ -438,14 +291,7 @@ ok.grade("q2a");
 # 1. What would you find by grouping by the following columns: `business_id`, `name`, `address`?
 # 
 # Please write your answer in the markdown cell below. You may create new cells below your answer to run code, but **please never add cells between a question cell and the answer cell below it.**
-# 
-# <!--
-# BEGIN QUESTION
-# name: q2b
-# points: 2
-# manual: True
-# -->
-# <!-- EXPORT TO PDF -->
+
 
 # 1. Each record represent a business. 
 # 2. The primary key is the business_id.
@@ -474,7 +320,7 @@ len(bus)
 # 
 # Next, let's  explore some of the variables in the business table. We begin by examining the postal code.
 # 
-# ### Question 3a
+# ### Part 3a
 # 
 # Answer the following questions about the `postal code` column in the `bus` data frame?  
 # 1. Are ZIP codes quantitative or qualitative? If qualitative, is it ordinal or nominal? 
@@ -482,28 +328,16 @@ len(bus)
 # 
 # *Note*: ZIP codes and postal codes are the same thing.
 # 
-# <!--
-# BEGIN QUESTION
-# name: q3a
-# points: 2
-# manual: True
-# -->
-# <!-- EXPORT TO PDF -->
 
 # 1. ZIP codes are quanlitative and nominal.
 # 2. string
 
-# ### Question 3b
+# ### Part 3b
 # 
 # How many restaurants are in each ZIP code? 
 # 
 # In the cell below, create a series where the index is the postal code and the value is the number of records with that postal code in descending order of count. 94110 should be at the top with a count of 596. 
 # 
-# <!--
-# BEGIN QUESTION
-# name: q3b
-# points: 0
-# -->
 
 # In[418]:
 
@@ -553,19 +387,12 @@ bus.head()
 len(bus)
 
 
-# ### Question 3c : A Closer Look at Missing ZIP Codes
+# ### Part 3c : A Closer Look at Missing ZIP Codes
 # 
 # Let's look more closely at records with missing ZIP codes. Describe why some records have missing postal codes.  Pay attention to their addresses. You will need to look at many entries, not just the first five.
 # 
 # *Hint*: The `isnull` method of a series returns a boolean series which is true only for entries in the original series that were missing.
 # 
-# <!--
-# BEGIN QUESTION
-# name: q3c
-# points: 2
-# manual: True
-# -->
-# <!-- EXPORT TO PDF -->
 
 # We can see that most of them have invalid locations and some of them don't have a phone_number. This might be due to not updating their information. 
 
@@ -579,7 +406,7 @@ bus.head(10)
 len(bus)
 
 
-# ### Question 3d: Incorrect ZIP Codes
+# ### Part 3d: Incorrect ZIP Codes
 
 # This dataset is supposed to be only about San Francisco, so let's set up a list of all San Francisco ZIP codes.
 
@@ -600,12 +427,7 @@ all_sf_zip_codes = ["94102", "94103", "94104", "94105", "94107", "94108",
 # Set `weird_zip_code_businesses` equal to a new dataframe showing only rows corresponding to ZIP codes that are not valid and not missing. Use the `postal_code_5` column.
 # 
 # *Hint*: The `~` operator inverts a boolean array. Use in conjunction with `isin`.
-# 
-# <!--
-# BEGIN QUESTION
-# name: q3d1
-# points: 0
-# -->
+
 
 # In[484]:
 
@@ -620,29 +442,19 @@ weird_zip_code_businesses
 
 
 # If we were doing very serious data analysis, we might indivdually look up every one of these strange records. Let's focus on just two of them: ZIP codes 94545 and 94602. Use a search engine to identify what cities these ZIP codes appear in. Try to explain why you think these two ZIP codes appear in your dataframe. For the one with ZIP code 94602, try searching for the business name and locate its real address.
-# <!--
-# BEGIN QUESTION
-# name: q3d2
-# points: 1
-# manual: True
-# -->
-# <!-- EXPORT TO PDF -->
+
 
 # Zip code: 94545 corresponds to Hayward, CA
 # Zip code: 94602 corresponds to Oakland, CA
 # These two appears in my data frame because their zip codes aren't in all San Francisco ZIP codes (all_sf_zip_codes).
 
-# ### Question 3e
+# ### Part 3e
 # 
 # We often want to clean the data to improve our analysis. This cleaning might include changing values for a variable or dropping records.
 # 
 # The value 94602 is wrong. Change it to the most reasonable correct value, using all information you have available. Modify the `postal_code_5` field using `bus['postal_code_5'].str.replace` to replace 94602.
 # 
-# <!--
-# BEGIN QUESTION
-# name: q3e
-# points: 1
-# -->
+
 
 # In[485]:
 
@@ -663,12 +475,6 @@ ok.grade("q3e");
 # Now that we have corrected one of the weird postal codes, let's filter our `bus` data such that only postal codes from San Francisco remain. While we're at it, we'll also remove the businesses that are missing a postal code. As we mentioned in question 3d, filtering our postal codes in this way may not be ideal. (Fortunately, this is just a course assignment.)
 # 
 # Assign `bus` to a new dataframe that has the same columns but only the rows with ZIP codes in San Francisco.
-# 
-# <!--
-# BEGIN QUESTION
-# name: q3f
-# points: 1
-# -->
 
 # In[488]:
 
@@ -701,11 +507,7 @@ ok.grade("q3f");
 # 
 # *Hint*: Consider using [`np.random.choice`](https://docs.scipy.org/doc/numpy-1.14.1/reference/generated/numpy.random.choice.html).
 # 
-# <!--
-# BEGIN QUESTION
-# name: q4a
-# points: 1
-# -->
+
 
 # In[442]:
 
@@ -729,11 +531,6 @@ ok.grade("q4a");
 
 # ### Question 4b
 # Suppose we take a SRS of 5 businesses from the business data. What is the probability that the business named AMERICANA GRILL & FOUNTAIN is in the sample?
-# <!--
-# BEGIN QUESTION
-# name: q4b
-# points: 1
-# -->
 
 # In[444]:
 
@@ -753,12 +550,7 @@ ok.grade("q4b");
 # Collect a stratified random sample of business names, where each stratum consists of a postal code. Collect one business name per stratum. Assign `bus_strat_sample` to a series of business names selected by this sampling procedure.
 # 
 # Hint: You can use the `sample` function you defined earlier.
-# 
-# <!--
-# BEGIN QUESTION
-# name: q4c
-# points: 1
-# -->
+
 
 # In[446]:
 
@@ -780,11 +572,7 @@ ok.grade("q4c");
 # ### Question 4d
 # 
 # What is the probability that AMERICANA GRILL & FOUNTAIN is selected as part of this stratified random sampling procedure?
-# <!--
-# BEGIN QUESTION
-# name: q4d
-# points: 1
-# -->
+
 
 # In[448]:
 
@@ -804,11 +592,7 @@ ok.grade("q4d");
 # 
 # Hint: Consider using [`isin`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.isin.html).
 # 
-# <!--
-# BEGIN QUESTION
-# name: q4e
-# points: 1
-# -->
+
 
 # In[450]:
 
@@ -829,11 +613,6 @@ ok.grade("q4e");
 
 # ### Question 4f
 # What is the probability that AMERICANA GRILL & FOUNTAIN is selected as part of this cluster sampling procedure?
-# <!--
-# BEGIN QUESTION
-# name: q4f
-# points: 1
-# -->
 
 # In[112]:
 
@@ -850,24 +629,13 @@ ok.grade("q4f");
 
 # ### Question 4g
 # In the context of this question, what are the benefit(s) of performing stratified sampling over cluster sampling? Why would you consider performing cluster sampling instead of stratified sampling? Compare the strengths and weaknesses of both sampling techniques.
-# <!--
-# BEGIN QUESTION
-# name: q4g
-# points: 2
-# manual: True
-# -->
-# <!-- EXPORT TO PDF -->
+
 
 # In stratified sampling, a random sample is drawn from each of the strata, whereas in cluster sampling only the selected clusters are sampled. 
 
 # ### Question 4h
 # Collect a multi-stage sample. First, take a SRS of 5 postal codes. Then, collect an SRS of one business name per selected postal code. Assign `bus_multi_sample` to a series of names selected by this procedure.
-# 
-# <!--
-# BEGIN QUESTION
-# name: q4h
-# points: 1
-# -->
+
 
 # In[452]:
 
@@ -894,12 +662,7 @@ ok.grade("q4h");
 
 # ### Question 4i
 # What is the probability that AMERICANA GRILL & FOUNTAIN is chosen in the multi-stage sample?
-# 
-# <!--
-# BEGIN QUESTION
-# name: q4i
-# points: 1
-# -->
+
 
 # In[130]:
 
